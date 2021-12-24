@@ -6,8 +6,10 @@
 # do Vinicius 6/12/2005
 
 eye 0.0 0.0 5.7
+target 0.0 0.0 0.0
+up 0 1 0
 size 200 200
-ortho -1 -1 1 1
+window_size 2 2
 background 0.0 0.0 0.0
 ambient 0.5
 

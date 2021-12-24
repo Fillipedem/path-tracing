@@ -1,10 +1,7 @@
 """
 Implement class to read a SDL(Scene Description Language)
 """
-import io
 import regex
-from pathlib import Path 
-from typing import List
 
 SPACE_REGEX = '[ ]+'
 
@@ -46,8 +43,12 @@ class SDLReader():
             self.eye = to_float(options[1:])
         elif 'size'== command:
             self.size = to_int(options[1:])
-        elif 'ortho' == command:
-            self.ortho = to_float(options[1:])
+        elif 'window_size' == command:
+            self.window_size = to_float(options[1:])
+        elif 'target' == command:
+            self.target = to_float(options[1:])
+        elif 'up' == command:
+            self.up = to_float(options[1:])            
         elif 'background' == command:
             self.background = to_float(options[1:]) 
         elif 'ambient' == command:
@@ -75,7 +76,7 @@ class SDLReader():
         """Check for missing information after read sdl file...
         """
         # check attrs...
-        attrs = ['eye', 'size', 'ortho', 'background', 'ambient']
+        attrs = ['eye', 'size', 'target', 'up', 'window_size', 'background', 'ambient']
         for attr in attrs:
             if not hasattr(self, attr):
                 raise ValueError(f"Atributo {attr}, não repassado no arquivo SDL!")
@@ -87,7 +88,3 @@ def to_int(input):
 
 def to_float(input):
     return list(map(float, input))
-
-if __name__ == "__main__":
-    sdl_reader = SDLReader()
-    sdl_reader.read('./cornellroom/cornellroom.sdl')
