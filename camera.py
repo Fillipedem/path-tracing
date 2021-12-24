@@ -31,7 +31,6 @@ class Camera():
 
         self.d = np.linalg.norm(self._target - self._eye)
 
-
     def get_rays(self):
         rays = []
 
@@ -52,7 +51,7 @@ class Camera():
                 r = p - self._eye 
                 R = r/np.linalg.norm(r)
                 rays.append(
-                    Ray(p=self._eye, v=R)
+                    Ray(p=self._eye, v=R, pixel=(i, j))
                 )
                 print(p)
 
