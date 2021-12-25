@@ -1,6 +1,5 @@
 from sdl import SDLReader
-from camera import Camera
-
+from scene.camera import Camera
 
 if __name__ == "__main__":
     # Read Scene
@@ -11,3 +10,4 @@ if __name__ == "__main__":
         eye=scene.eye, target=scene.target, up=scene.up, window_size=scene.window_size, pixels_size=scene.size
     )
     # Load Objects
+    

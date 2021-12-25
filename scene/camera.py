@@ -1,7 +1,7 @@
 from typing import List
 
 import numpy as np
-from ray import Ray
+from scene.ray import Ray
 
 class Camera():
 
