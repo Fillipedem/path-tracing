@@ -1,53 +1,31 @@
-from pathlib import Path
-from readers.sdl import SDLReader
-from readers.obj import OBJReader
-from scene.camera import Camera
-from scene.objects import Properties, Triangles, SceneObject
-
-PATH = Path('./cornellroom/')
-SDL_FILE = PATH / 'cornellroom.sdl'
-
-def get_objects(PATH, sdl, objects):
-    obj_reader = OBJReader()
-    for obj_file_name, obj_props in sdl.objects:
-        # properties
-        properties = Properties(
-            color = obj_props[:3],
-            ka = obj_props[3],
-            kd = obj_props[4],
-            ks = obj_props[5],
-            kt = obj_props[6],
-            n  = obj_props[7]
-        )
-        # object vertices/triangles
-        vertices, faces = obj_reader.read(PATH / obj_file_name)
-        triangles = []
-        for face in faces:
-            t = Triangles(
-                p1=vertices[face[0]], p2=vertices[face[1]], p3=vertices[face[2]]
-            )
-            triangles.append(t)
-        # SceneObject
-        obj = SceneObject(
-            name=obj_file_name.split('.')[0],
-            properties=properties,
-            objects=triangles
-        )
-        objects.append(obj)
+import numpy as np
+from scene.load import SceneLoader
 
 if __name__ == "__main__":
     # ## Load Scene
-    # Read Scene
-    sdl = SDLReader()
-    sdl.read(SDL_FILE)
+    scene = SceneLoader()
     # Initialize Cam
-    camera = Camera(
-        eye=sdl.eye, target=sdl.target, up=sdl.up, window_size=sdl.window_size, pixels_size=sdl.size
-    )
+    camera = scene.get_camera()
     # Load Objects
-    objects = get_objects(PATH, sdl, objects)
-
+    scene_objects = scene.get_objects()
     # Load Light
+    # light_object = scene.get_light()
 
-    # ## Path tracing
-    # TODO
+    # "RAY CASTING" #
+    rays = camera.get_rays()
+    w, h = scene.get_size()
+    img = np.zeros((w, h, 3))
+    for ray in rays:
+        min_d = np.inf
+        for scene_obj in scene_objects:
+            for obj in scene_obj.objects:
+                point = obj.intersect(ray)
+                if point is not None:
+                    distance = np.linalg.norm(ray.p - point)
+                    if distance < min_d:
+                        img[ray.pixel[1], ray.pixel[0]] = scene_obj.properties.color
+
+    from matplotlib import pyplot as plt
+
+    plt.imshow(img, interpolation='nearest')
+    plt.show()
