@@ -53,7 +53,5 @@ class Camera():
                 rays.append(
                     Ray(p=self._eye, v=R, pixel=(i, j))
                 )
-                print(p)
-
 
         return rays

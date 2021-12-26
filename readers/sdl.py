@@ -1,9 +1,8 @@
 """
 Implement class to read a SDL(Scene Description Language)
 """
-import regex
+from readers.helper import read_lines, to_int, to_float
 
-SPACE_REGEX = '[ ]+'
 
 class SDLReader():
 
@@ -21,18 +20,10 @@ class SDLReader():
         with open(sdl_path, 'r') as file:
             f = file.read()
 
-        def remove_spaces(line):
-            line = regex.sub(SPACE_REGEX, ' ', line)
-            return line.strip()
-
-        lines = [remove_spaces(line) for line in f.split('\n') if line.strip()]
-
-        for line in lines: 
-            
-            if line[0] == '#': 
-                continue 
-            
+        lines = read_lines(f)
+        for line in lines:
             self.__process_command(line)
+            
         self.__sanity_check()
 
     def __process_command(self, line: str):
@@ -82,9 +73,4 @@ class SDLReader():
                 raise ValueError(f"Atributo {attr}, não repassado no arquivo SDL!")
 
         # check if objects exists...
-
-def to_int(input):
-    return list(map(int, input))
-
-def to_float(input):
-    return list(map(float, input))
+        # TODO
