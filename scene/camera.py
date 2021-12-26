@@ -23,7 +23,7 @@ class Camera():
 
     def __initialize(self):
         self.t = self._target - self._eye
-        self.b = np.cross(self.t, self._up)
+        self.b = np.cross(self._up, self.t)
 
         self.t = self.t/np.linalg.norm(self.t)
         self.b = self.b/np.linalg.norm(self.b)
@@ -43,11 +43,11 @@ class Camera():
         qx = ((2*gx)/(w - 1))*self.b
         qy = ((2*gy)/(h - 1))*self.v
 
-        p1m = self.t*self.d - gx*self.b - gy*self.v
+        p11 = self._eye + self.t*self.d + gx*self.b + gy*self.v
 
         for i in range(w):
             for j in range(h):
-                p = p1m + qx*(i - 1) + qy*(j - 1)
+                p = p11 - qx*i - qy*j
                 r = p - self._eye 
                 R = r/np.linalg.norm(r)
                 rays.append(

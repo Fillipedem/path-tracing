@@ -43,11 +43,13 @@ class Triangles(AbstractIntersect):
 
         self.p = (p1 + p2 + p3)/3
         self.normal = np.cross(p2-p1,p3-p2)
-
-        max_d = np.linalg.norm(self.p - p1)
-        max_d = max(max_d, np.linalg.norm(self.p - p2))
-        max_d = max(max_d, np.linalg.norm(self.p - p3))
-        self.max_d = max_d
+        self.p1 = p1 
+        self.p2 = p2 
+        self.p3 = p3
+        self.edge1 = p2 - p1
+        self.edge2 = p3 - p2
+        self.edge3 = p1 - p3
+    
 
     def intersect(self, ray):
         """Checks if the ray intersect"""
@@ -62,10 +64,24 @@ class Triangles(AbstractIntersect):
             return None 
 
         # check if the point is inside the triangle
-        plane_point = ray.p + ray.v*t
-        if np.linalg.norm(self.p - plane_point) > self.max_d:
-            return None
+        point = ray.p + ray.v*t
 
-        return plane_point
+        if self.__inside_outside(point):
+            return point
+        else:
+            return None
             
         
+    def __inside_outside(self, point):
+        c1 = point - self.p1
+        c2 = point - self.p2
+        c3 = point - self.p3
+
+        inside = (
+            np.dot(self.normal, np.cross(self.edge1, c1)) > 0 and 
+            np.dot(self.normal, np.cross(self.edge2, c2)) > 0 and 
+            np.dot(self.normal, np.cross(self.edge3, c3)) > 0
+        )
+
+        return inside
+

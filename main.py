@@ -2,23 +2,12 @@ from pathlib import Path
 from readers.sdl import SDLReader
 from readers.obj import OBJReader
 from scene.camera import Camera
-from scene.object import Properties, Triangles, SceneObject
-
+from scene.objects import Properties, Triangles, SceneObject
 
 PATH = Path('./cornellroom/')
 SDL_FILE = PATH / 'cornellroom.sdl'
 
-if __name__ == "__main__":
-    # ## Load Scene
-    # Read Scene
-    sdl = SDLReader()
-    sdl.read(SDL_FILE)
-    # Initialize Cam
-    camera = Camera(
-        eye=sdl.eye, target=sdl.target, up=sdl.up, window_size=sdl.window_size, pixels_size=sdl.size
-    )
-    # Load Objects
-    objects = []
+def get_objects(PATH, sdl, objects):
     obj_reader = OBJReader()
     for obj_file_name, obj_props in sdl.objects:
         # properties
@@ -45,6 +34,18 @@ if __name__ == "__main__":
             objects=triangles
         )
         objects.append(obj)
+
+if __name__ == "__main__":
+    # ## Load Scene
+    # Read Scene
+    sdl = SDLReader()
+    sdl.read(SDL_FILE)
+    # Initialize Cam
+    camera = Camera(
+        eye=sdl.eye, target=sdl.target, up=sdl.up, window_size=sdl.window_size, pixels_size=sdl.size
+    )
+    # Load Objects
+    objects = get_objects(PATH, sdl, objects)
 
     # Load Light
 
