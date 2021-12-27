@@ -1,10 +1,9 @@
-import threading
+import random
 import numpy as np
 from readers.load import SceneLoader
 from scene.ray import Ray
 
-
-def ray_casting(ray, scene_objects, lights):
+def path_tracing(ray, scene_objects, lights):
     ray_intersection = trace_ray(ray, scene_objects)
 
     # get color + shadow ray
@@ -13,7 +12,63 @@ def ray_casting(ray, scene_objects, lights):
         I = shading(ray, scene_obj, point, normal, lights)
         I = shadow_ray(scene_objects, lights, point, I)
 
+        # send secundary rays        
+        I = I + secundary_ray(point, normal, ray, scene_obj, scene_objects, lights)
+
         return np.clip(I, 0, 1)
+
+def secundary_ray(point, normal, orig_ray, scene_obj, scene_objects, lights):
+    Is = np.zeros(3)
+    ktot = scene_obj.properties.kd + scene_obj.properties.ks + scene_obj.properties.kt
+    rand = random.uniform(0, ktot)
+
+    if rand < scene_obj.properties.kd:
+        V = orig_ray.p-point
+        V = V/np.linalg.norm(V)
+        vec = get_difuse_vector(normal, V)
+        ray = Ray(point, vec)
+        ray_intersection = send_ray(scene_objects, lights, ray)
+        if ray_intersection:
+            I, _, _, _ = ray_intersection
+            Is += I*scene_obj.properties.kd
+
+    elif rand < scene_obj.properties.ks:
+        for light in lights:
+            L = light.point - point
+            L = L/np.linalg.norm(L)
+            R = 2*normal*np.dot(normal, L) - L
+            R = R/np.linalg.norm(R)
+    
+            ray = Ray(point, R)
+    
+            ray_intersection = send_ray(scene_objects, lights, ray)
+            if ray_intersection:
+                I, _, _, _ = ray_intersection
+                Is += I*scene_obj.properties.ks
+    
+    return Is
+
+def get_difuse_vector(normal, V):
+    e1, e2 = random.random(), random.random()
+    a, b = np.arccos(np.sqrt(e1)), 2*np.pi*e2
+
+    normal = normal/np.linalg.norm(normal)
+    S = np.cross(normal, V)
+    S = S/np.linalg.norm(S)
+    V = np.cross(S, normal)
+    V = V/np.linalg.norm(V)
+
+    matrix = np.array([V, S, normal])
+
+    new_vector = np.array((
+        np.sin(a)*np.cos(b),
+        np.sin(a)*np.sin(b),
+        np.cos(a)
+        )
+    )
+
+    return matrix.transpose()@new_vector
+
 
 def trace_ray(ray, scene_objects):
     min_d = np.inf
@@ -28,6 +83,18 @@ def trace_ray(ray, scene_objects):
                     min_d = distance
     return intersection
 
+def send_ray(scene_objects, lights, ray):
+    I = np.zeros(3)
+    ray_intersection = trace_ray(ray, scene_objects)
+            
+    if ray_intersection:
+        scene_obj, point, normal = ray_intersection
+                
+        I = shading(ray, scene_obj, point, normal, lights)
+        I = shadow_ray(scene_objects, lights, point, I)
+
+        return I, scene_obj, point, normal
+
 def shadow_ray(scene_objects, lights, point, I):
     for light in lights:
         shadow_ray = Ray(point, light.point - point)
@@ -36,14 +103,18 @@ def shadow_ray(scene_objects, lights, point, I):
         if shadow_intersection:
             _, p, _ = shadow_intersection
             if np.linalg.norm(p - point) < distance:
-                I = I*0.9
+                I = I*0.5
     return I
 
-def shading(ray, obj, point, normal, lights):  
+def shading(ray, obj, point, normal, lights, only_ambient=False):
+    I = obj.properties.color*obj.properties.ka*0.5
+
+    if only_ambient:
+        return I
+
     V = point - ray.p
     V = V/np.linalg.norm(V)
     
-    I = obj.properties.color*obj.properties.ka # Ambiental
     for light in lights:
         L = light.point - point
         L = L/np.linalg.norm(L)
@@ -55,13 +126,6 @@ def shading(ray, obj, point, normal, lights):
         I += np.clip(difusa, 0, 1) + np.clip(especular, 0, 1)
 
     return I
-
-
-def parallel(rays, scene_objects, lights, img):
-    for ray in rays:
-        color = ray_casting(ray, scene_objects, lights)
-        if color is not None:
-            img[ray.pixel[1], ray.pixel[0]] = color
 
 if __name__ == "__main__":
     # ## Load Scene
@@ -79,9 +143,14 @@ if __name__ == "__main__":
     w, h = scene.get_size()
     img = np.zeros((w, h, 3))
 
-    parallel(rays, scene_objects, lights, img)
-
     from matplotlib import pyplot as plt
+    for i in range(10):
+        for ray in rays:
+            color = path_tracing(ray, scene_objects, lights)
+            if color is not None:
+                img[ray.pixel[1], ray.pixel[0]] += color
 
-    plt.imshow(img, interpolation='nearest')
-    plt.show()
+        
+        print(f"{i}")
+        plt.imshow(img/(i + 1), interpolation='nearest')
+        
