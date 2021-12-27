@@ -19,13 +19,10 @@ class Properties():
 
 class Light():
 
-    def __init__(self, scene_object, color):
-        self.scene_object = scene_object
-        self.color = np.array(color)
-
-    def get_point(self):
-        obj = self.scene_object.objects[0]
-        return (obj.p1 + obj.p2 + obj.p3)/3
+    def __init__(self, point, color, lp):
+        self.lp = lp
+        self.point = np.array(point)
+        self.color = np.array(color)   
 
 
 class AbstractIntersect():
@@ -72,7 +69,7 @@ class Triangles(AbstractIntersect):
 
         # check if object is behind the ray starting point
         t = np.dot((self.p - ray.p), self.normal)/denominator
-        if t < 0:             
+        if t < 0.01:             
             return None 
 
         # check if the point is inside the triangle

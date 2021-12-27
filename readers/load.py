@@ -15,6 +15,8 @@ class SceneLoader():
 
     def get_objects(self):
         objects = []
+
+        # objects
         for obj_file_name, obj_props in self.sdl.objects:
             # properties
             properties = Properties(
@@ -28,25 +30,10 @@ class SceneLoader():
             # object vertices/triangles
             obj = self.__get_object(obj_file_name, properties)
             objects.append(obj)
+
+        # light object
         
         return objects
-
-    def __get_object(self,obj_file_name, properties=None):
-        vertices, faces = OBJReader().read(PATH / obj_file_name)
-        triangles = []
-        for face in faces:
-            t = Triangles(
-                    p1=vertices[face[0]], p2=vertices[face[1]], p3=vertices[face[2]]
-                )
-            triangles.append(t)
-            # SceneObject
-        obj = SceneObject(
-                name=obj_file_name.split('.')[0],
-                properties=properties,
-                objects=triangles
-            )
-        
-        return obj
 
     def get_camera(self):
         camera = Camera(
@@ -64,6 +51,24 @@ class SceneLoader():
     def get_light(self):
         lights = []
         for obj_name, color, lp in self.sdl.lights:
-            objects = self.__get_object(obj_name)
-            lights.append(Light(objects, color))
+            vertices, _ = OBJReader().read(PATH / obj_name)
+            for v in vertices:
+                lights.append(Light(v, color, lp/len(vertices)))
         return lights
+
+    def __get_object(self,obj_file_name, properties=None):
+        vertices, faces = OBJReader().read(PATH / obj_file_name)
+        triangles = []
+        for face in faces:
+            t = Triangles(
+                    p1=vertices[face[0]], p2=vertices[face[1]], p3=vertices[face[2]]
+                )
+            triangles.append(t)
+            # SceneObject
+        obj = SceneObject(
+                name=obj_file_name.split('.')[0],
+                properties=properties,
+                objects=triangles
+            )
+        
+        return obj
