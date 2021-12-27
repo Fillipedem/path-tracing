@@ -56,7 +56,7 @@ class SDLReader():
             )
         elif 'light' == command:
             self.lights.append(
-                (options[1], to_float(options[2:]))
+                (options[1], to_float(options[2:-1]), float(options[-1]))
             )
         elif 'output' == command:
             self.output = options[1]

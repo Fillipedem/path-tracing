@@ -2,7 +2,7 @@ from pathlib import Path
 from readers.sdl import SDLReader
 from readers.obj import OBJReader
 from scene.camera import Camera
-from scene.objects import Properties, Triangles, SceneObject
+from scene.objects import Light, Properties, Triangles, SceneObject
 
 PATH = Path('./cornellroom/')
 SDL_FILE = PATH / 'cornellroom.sdl'
@@ -15,7 +15,6 @@ class SceneLoader():
 
     def get_objects(self):
         objects = []
-        obj_reader = OBJReader()
         for obj_file_name, obj_props in self.sdl.objects:
             # properties
             properties = Properties(
@@ -27,23 +26,27 @@ class SceneLoader():
                 n  = obj_props[7]
             )
             # object vertices/triangles
-            vertices, faces = obj_reader.read(PATH / obj_file_name)
-            triangles = []
-            for face in faces:
-                t = Triangles(
-                    p1=vertices[face[0]], p2=vertices[face[1]], p3=vertices[face[2]]
-                )
-                triangles.append(t)
-            # SceneObject
-            obj = SceneObject(
-                name=obj_file_name.split('.')[0],
-                properties=properties,
-                objects=triangles
-            )
+            obj = self.__get_object(obj_file_name, properties)
             objects.append(obj)
         
         return objects
 
+    def __get_object(self,obj_file_name, properties=None):
+        vertices, faces = OBJReader().read(PATH / obj_file_name)
+        triangles = []
+        for face in faces:
+            t = Triangles(
+                    p1=vertices[face[0]], p2=vertices[face[1]], p3=vertices[face[2]]
+                )
+            triangles.append(t)
+            # SceneObject
+        obj = SceneObject(
+                name=obj_file_name.split('.')[0],
+                properties=properties,
+                objects=triangles
+            )
+        
+        return obj
 
     def get_camera(self):
         camera = Camera(
@@ -57,3 +60,10 @@ class SceneLoader():
 
     def get_size(self):
         return self.sdl.size[0], self.sdl.size[1]
+
+    def get_light(self):
+        lights = []
+        for obj_name, color, lp in self.sdl.lights:
+            objects = self.__get_object(obj_name)
+            lights.append(Light(objects, color))
+        return lights

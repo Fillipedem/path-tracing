@@ -17,6 +17,17 @@ class Properties():
         self.kt = kt
         self.n = n
 
+class Light():
+
+    def __init__(self, scene_object, color):
+        self.scene_object = scene_object
+        self.color = np.array(color)
+
+    def get_point(self):
+        obj = self.scene_object.objects[0]
+        return (obj.p1 + obj.p2 + obj.p3)/3
+
+
 class AbstractIntersect():
 
     def __init__(self):
@@ -43,6 +54,7 @@ class Triangles(AbstractIntersect):
 
         self.p = (p1 + p2 + p3)/3
         self.normal = np.cross(p2-p1,p3-p2)
+        self.normal = self.normal/np.linalg.norm(self.normal)
         self.p1 = p1 
         self.p2 = p2 
         self.p3 = p3
