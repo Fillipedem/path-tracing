@@ -1,4 +1,6 @@
 from pathlib import Path
+
+import numpy as np
 from readers.sdl import SDLReader
 from readers.obj import OBJReader
 from scene.camera import Camera
@@ -32,7 +34,12 @@ class SceneLoader():
             objects.append(obj)
 
         # light object
-        
+        for obj_file_name, color, lp in self.sdl.lights:
+            obj_scene = self.__get_object(obj_file_name)
+            obj_scene.is_light = True
+            obj_scene.light_color = np.array(color)*lp
+            objects.append(obj_scene)    
+
         return objects
 
     def get_camera(self):
@@ -50,11 +57,15 @@ class SceneLoader():
 
     def get_light(self):
         lights = []
-        for obj_name, color, lp in self.sdl.lights:
-            vertices, _ = OBJReader().read(PATH / obj_name)
-            for v in vertices:
-                lights.append(Light(v, color, lp/len(vertices)))
+        for obj_file_name, color, lp in self.sdl.lights:
+            objs = self.__get_object(obj_file_name)
+            lights.append(
+                Light(lp, color, objs)
+            )
         return lights
+
+    def get_tonemapping(self):
+        return self.sdl.tonemapping
 
     def __get_object(self,obj_file_name, properties=None):
         vertices, faces = OBJReader().read(PATH / obj_file_name)
@@ -72,3 +83,5 @@ class SceneLoader():
             )
         
         return obj
+
+    

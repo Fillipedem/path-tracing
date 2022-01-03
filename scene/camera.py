@@ -1,5 +1,6 @@
 from typing import List
 
+import random
 import numpy as np
 from scene.ray import Ray
 
@@ -47,7 +48,7 @@ class Camera():
 
         for i in range(w):
             for j in range(h):
-                p = p11 - qx*i - qy*j
+                p = p11 - qx*i - qy*j# + self.noise(qx, qy, gx/(w - 1), gy/(h - 1)) # random part
                 r = p - self._eye 
                 R = r/np.linalg.norm(r)
                 rays.append(
@@ -55,3 +56,6 @@ class Camera():
                 )
 
         return rays
+
+    def noise(self, qx, qy, x, y):
+        return qx*random.uniform(-x, x) + qy*random.uniform(-y, y) 

@@ -8,7 +8,7 @@
 eye 0.0 0.0 5.7
 target 0.0 0.0 0.0
 up 0 1 0
-size 20 20
+size 50 50
 window_size 2 2
 background 0.0 0.0 0.0
 ambient 0.5
@@ -17,7 +17,7 @@ ambient 0.5
 light luzcornell.obj 1.0 1.0 1.0 1.0
 
 npaths 10
-tonemapping 1.0
+tonemapping 0.5
 seed 9
 
 # Aqui comeca a definicao das geometrias

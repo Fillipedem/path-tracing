@@ -5,6 +5,7 @@ Properties - Hold ilumination info
 SceneObject - One or more scene objects
 Triangles - Triangle object
 """
+from random import random, randint
 import numpy as np
 
 class Properties():
@@ -19,11 +20,14 @@ class Properties():
 
 class Light():
 
-    def __init__(self, point, color, lp):
+    def __init__(self, lp, color, scene_obj):
         self.lp = lp
-        self.point = np.array(point)
+        self.scene_obj = scene_obj
         self.color = np.array(color)   
 
+    def get_point(self):
+        idx = randint(0, len(self.scene_obj.objects) - 1)
+        return self.scene_obj.objects[idx].get_point()
 
 class AbstractIntersect():
 
@@ -40,6 +44,8 @@ class SceneObject():
         self.name = name
         self.properties = properties
         self.objects = objects
+        self.is_light = False 
+        self.light_color = None        
 
 
 class Triangles(AbstractIntersect):
@@ -94,3 +100,10 @@ class Triangles(AbstractIntersect):
 
         return inside
 
+
+    def get_point(self):
+        c1 = np.random.uniform(0, 1)
+        c2 = np.random.uniform(0, 1 - c1)
+        c3 = np.random.uniform(0, 1 - c1 - c2)
+
+        return self.p1*c1 + self.p2*c2 + self.p3*c3
