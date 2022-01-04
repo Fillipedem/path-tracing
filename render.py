@@ -24,8 +24,9 @@ class PathTracing():
             if obj.is_light:
                 return obj.light_color
 
-            I += self.phong(ray, obj, point, normal)
-
+            I += self.phong(ray, obj, point, normal) 
+            #I += obj.properties.ka*obj.properties.color*self.ambient
+ 
             # send secundary rays        
             I += self.secundary_ray(point, normal, ray, obj)
 
@@ -34,6 +35,7 @@ class PathTracing():
     def secundary_ray(self, point, normal, orig_ray, obj):
         """Cast secundary ray(diffuse/specular/transparent)"""
         I = np.zeros(3)
+
         ktot = obj.properties.kd + obj.properties.ks + obj.properties.kt
         rand = random.uniform(0, ktot)
     
@@ -45,7 +47,7 @@ class PathTracing():
 
             I = self.get_color(ray)*obj.properties.kd
     
-        elif rand < obj.properties.ks:                       # SPECULAR
+        elif rand < obj.properties.kd + obj.properties.ks:                       # SPECULAR
             for light in self.lights:
                 light_point = light.get_point()
                 L = light_point - point
@@ -56,8 +58,20 @@ class PathTracing():
                 ray = Ray(point, R)
         
                 I = self.get_color(ray)*obj.properties.ks
-        else:                                                       # Transparent
-            pass 
+        else:                                                                     # Refraction
+            T = self.get_refraction(orig_ray.v, normal)
+
+            ray = Ray(point, T)
+            ray_intersection = self.find_intersection(ray)
+            if ray_intersection:
+                _, new_point, new_normal = ray_intersection
+            
+                new_T = self.get_refraction(T, new_normal)
+                T = new_T
+                ray = Ray(new_point, new_T)
+
+
+            I = self.get_color(ray)*obj.properties.kt
 
         return I
 
@@ -83,6 +97,23 @@ class PathTracing():
 
         return matrix.transpose()@new_vector
 
+    def get_refraction(self, V, normal):
+        """return refracted vector"""
+        if np.dot(normal, V) > 0:
+            normal = -normal
+            nr = 1.2
+        else: 
+            nr = 1/1.2
+        I = -V
+        
+        sqrt = 1 - nr**2*(1-np.dot(normal, I)**2)
+        if sqrt < 0:
+            return np.zeros(3)
+        T = (nr*np.dot(normal, I) - np.sqrt(sqrt))*normal - nr*I 
+
+        return T
+
+
     def find_intersection(self, ray):
         """Return the closest intersection given a ray object
         
@@ -96,7 +127,7 @@ class PathTracing():
                 point = obj.intersect(ray)
                 if point is not None:
                     distance = np.linalg.norm(ray.p - point)
-                    if distance < min_d:
+                    if distance < min_d and distance > 0.001:
                         intersection = (scene_obj, point, obj.normal)
                         min_d = distance
         return intersection
@@ -143,7 +174,7 @@ class PathTracing():
         """return the color(phong) of the first intersected object"""
         I = np.zeros(3)
         ray_intersection = self.find_intersection(ray)
-                
+
         if ray_intersection:
             obj, point, normal = ray_intersection 
 

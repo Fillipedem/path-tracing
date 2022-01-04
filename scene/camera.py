@@ -48,7 +48,7 @@ class Camera():
 
         for i in range(w):
             for j in range(h):
-                p = p11 - qx*i - qy*j# + self.noise(qx, qy, gx/(w - 1), gy/(h - 1)) # random part
+                p = p11 - qx*i - qy*j + self.noise(qx, qy, gx/w, gy/h) # random part
                 r = p - self._eye 
                 R = r/np.linalg.norm(r)
                 rays.append(

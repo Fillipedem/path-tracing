@@ -1,3 +1,4 @@
+from matplotlib.image import imsave
 import numpy as np
 from readers.load import SceneLoader
 from render import PathTracing
@@ -20,13 +21,13 @@ if __name__ == "__main__":
     img = np.zeros((w, h, 3))
 
     from matplotlib import pyplot as plt
-    for i in range(50):
+    for i in range(100):
         for ray in rays:
             color = pt.path_tracing(ray)
             if color is not None:
                 img[ray.pixel[1], ray.pixel[0]] += color
 
         kimg = img/(i + 1)
-        plt.imshow(kimg/(kimg + scene.get_tonemapping()))
-        plt.show()
-        
+        kimg = kimg/(kimg + scene.get_tonemapping())
+        imsave(f"images/pt_1_{i}.png", np.clip(kimg, 0, 1))
+        imsave(f"images/pt_2_{i}.png", np.clip(img/(img + scene.get_tonemapping()), 0, 1))
