@@ -4,7 +4,8 @@ import numpy as np
 from readers.sdl import SDLReader
 from readers.obj import OBJReader
 from scene.camera import Camera
-from scene.objects import Light, Properties, Triangles, SceneObject
+from scene.objects import Light, Properties, SceneObject
+from scene.triangles import Triangles
 
 PATH = Path('./cornellroom/')
 SDL_FILE = PATH / 'cornellroom.sdl'
@@ -35,9 +36,8 @@ class SceneLoader():
 
         # light object
         for obj_file_name, color, lp in self.sdl.lights:
-            obj_scene = self.__get_object(obj_file_name)
-            obj_scene.is_light = True
-            obj_scene.light_color = np.array(color)*lp
+            properties = Properties(color=np.array(color)*lp, is_light=True)
+            obj_scene = self.__get_object(obj_file_name, properties=properties)
             objects.append(obj_scene)    
 
         return objects

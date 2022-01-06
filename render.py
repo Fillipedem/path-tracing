@@ -3,7 +3,12 @@ PATH TRACING Python Implementation
 """
 import random
 import numpy as np
+
 from scene.ray import Ray
+from scene.intersection import Intersection
+
+from help import sampling_up_hemisphere, snell_law
+
 
 class PathTracing():
 
@@ -14,173 +19,139 @@ class PathTracing():
         self.ambient = ambient
 
     def path_tracing(self, ray):
+        """1 path for a given ray"""
         I = np.zeros(3)
-        ray_intersection = self.find_intersection(ray)
+        intersection = self.__send_ray(ray)
 
-        # get color + shadow ray
-        if ray_intersection:
-            obj, point, normal = ray_intersection
+        if intersection:
+            obj_properties = intersection.obj_properties
 
-            if obj.is_light:
-                return obj.light_color
+            if obj_properties.is_light:
+                return obj_properties.color
 
-            I += self.phong(ray, obj, point, normal) 
-            #I += obj.properties.ka*obj.properties.color*self.ambient
+            I += self.__illumination(intersection.point ,intersection.normal, intersection.orig_ray.p, obj_properties) 
  
-            # send secundary rays        
-            I += self.secundary_ray(point, normal, ray, obj)
+            ## send secundary ray
+            #ktot = obj_properties.kd + obj_properties.ks + obj_properties.kt
+            #rand = random.uniform(0, ktot)
+            #
+            #if rand < obj_properties.kd:                           
+            #    V = ray.p-point
+            #    V = V/np.linalg.norm(V)
+            #    vec = sampling_up_hemisphere()(V, normal)
+            #    ray = Ray(point, vec)
+            #
+            #    I = self.__get_color(ray)*obj_properties.kd
+            #
+            #elif rand < obj_properties.kd + obj_properties.ks:     
+            #    for light in self.lights:
+            #        light_point = light.get_point()
+            #        L = light_point - point
+            #        L = L/np.linalg.norm(L)
+            #        R = 2*normal*np.dot(normal, L) - L
+            #        R = R/np.linalg.norm(R)
+            #        
+            #        ray = Ray(point, R)
+            #        
+            #        I = self.__get_color(ray)*obj_properties.ks
+            #else:                                                  
+            #    T = snell_law(ray.v, normal)
+            #    ray = Ray(point, T)
+            #    I = self.__get_color(ray)*obj_properties.kt
 
         return I
 
-    def secundary_ray(self, point, normal, orig_ray, obj):
-        """Cast secundary ray(diffuse/specular/transparent)"""
-        I = np.zeros(3)
-
-        ktot = obj.properties.kd + obj.properties.ks + obj.properties.kt
-        rand = random.uniform(0, ktot)
-    
-        if rand < obj.properties.kd:                         # DIFFUSE
-            V = orig_ray.p-point
-            V = V/np.linalg.norm(V)
-            vec = self.get_diffuse_vector(normal, V)
-            ray = Ray(point, vec)
-
-            I = self.get_color(ray)*obj.properties.kd
-    
-        elif rand < obj.properties.kd + obj.properties.ks:                       # SPECULAR
-            for light in self.lights:
-                light_point = light.get_point()
-                L = light_point - point
-                L = L/np.linalg.norm(L)
-                R = 2*normal*np.dot(normal, L) - L
-                R = R/np.linalg.norm(R)
-        
-                ray = Ray(point, R)
-        
-                I = self.get_color(ray)*obj.properties.ks
-        else:                                                                     # Refraction
-            T = self.get_refraction(orig_ray.v, normal)
-
-            ray = Ray(point, T)
-            ray_intersection = self.find_intersection(ray)
-            if ray_intersection:
-                _, new_point, new_normal = ray_intersection
-            
-                new_T = self.get_refraction(T, new_normal)
-                T = new_T
-                ray = Ray(new_point, new_T)
-
-
-            I = self.get_color(ray)*obj.properties.kt
-
-        return I
-
-    def get_diffuse_vector(self, normal , V):
-        """Return a difuse vector given a normal V vector"""
-        e1, e2 = random.random(), random.random()
-        a, b = np.arccos(np.sqrt(e1)), 2*np.pi*e2
-
-        normal = normal/np.linalg.norm(normal)
-        S = np.cross(normal, V)
-        S = S/np.linalg.norm(S)
-        V = np.cross(S, normal)
-        V = V/np.linalg.norm(V)
-
-        matrix = np.array([S, V, normal])
-
-        new_vector = np.array((
-            np.sin(a)*np.cos(b),
-            np.sin(a)*np.sin(b),
-            np.cos(a)
-            )
-        )
-
-        return matrix.transpose()@new_vector
-
-    def get_refraction(self, V, normal):
-        """return refracted vector"""
-        if np.dot(normal, V) > 0:
-            normal = -normal
-            nr = 1.2
-        else: 
-            nr = 1/1.2
-        I = -V
-        
-        sqrt = 1 - nr**2*(1-np.dot(normal, I)**2)
-        if sqrt < 0:
-            return np.zeros(3)
-        T = (nr*np.dot(normal, I) - np.sqrt(sqrt))*normal - nr*I 
-
-        return T
-
-
-    def find_intersection(self, ray):
-        """Return the closest intersection given a ray object
-        
-        Returns:
-            (intersected_obj, point, normal)
+    def __send_ray(self, ray):
         """
-        min_d = np.inf
+        return closest intersection for a given ray
+        
+        Args:
+            ray ([scene.ray.Ray]): Ray
+
+        Returns:
+            [scene.intersection.Intersection]: Intersection object
+        """
+        min_distance = np.inf
         intersection = None
-        for scene_obj in self.scene_objects:
+
+        for scene_obj in self.scene_objects: 
             for obj in scene_obj.objects:
                 point = obj.intersect(ray)
+                
                 if point is not None:
                     distance = np.linalg.norm(ray.p - point)
-                    if distance < min_d and distance > 0.001:
-                        intersection = (scene_obj, point, obj.normal)
-                        min_d = distance
+
+                    if distance < min_distance:
+                        intersection = Intersection(
+                            point=point, normal=obj.normal, obj_properties=scene_obj.properties, orig_ray=ray
+                        )
+                        min_distance = distance
+
         return intersection
 
+    
+    def __illumination(self, SP, SN, VP, obj_properties):
+        """returns point color(Phong Illumination)
 
-    def phong(self, ray, obj, point, normal):
-        """Return object color, given observer ray, intersected object"""
-        I = obj.properties.color*obj.properties.ka*self.ambient
-        
-        V = ray.p - point
+        Args:
+            SP (np.float): Surface Point
+            SN (np.float): Surface Normal
+            VP (np.float): Viewer Point
+            obj_properties (scene.objects.Properties): Point/obj properties
+
+        Returns:
+            [np.float]: point color
+        """
+        ambient = obj_properties.color*obj_properties.ka*self.ambient
+        diffuse = np.zeros(3)
+        specular = np.zeros(3)
+
+        # to viewer vector
+        V = VP - SP
         V = V/np.linalg.norm(V)
         
         for light in self.lights:
             light_point = light.get_point()
-            if self.is_shadowed(point, light_point):
+
+            if self.__is_shadowed(SP, light_point):
                 continue
 
-            L = light_point - point 
+            L = light_point - SP 
             L = L/np.linalg.norm(L)
-            R = 2*normal*np.dot(normal, L) - L
+            R = 2*SN*np.dot(SN, L) - L
             R = R/np.linalg.norm(R)
 
-            diffuse = light.lp*obj.properties.kd*np.dot(L, normal)*obj.properties.color
-            specular = light.lp*obj.properties.ks*(np.dot(R, V)**obj.properties.n)*np.ones(3)
-            I += diffuse + specular
+            diffuse += light.lp*obj_properties.kd*np.dot(L, SN)*obj_properties.color
+            specular += light.lp*obj_properties.ks*(np.dot(R, V)**obj_properties.n)*np.ones(3)
 
-        return I
+        return ambient + diffuse + specular
 
-    def is_shadowed(self, point, light_point):
+    def __is_shadowed(self, surface_point, light_point):
         """return True if there is a object between the point and the light, false otherwise"""
-        shadow_ray = Ray(point, light_point - point)
-        distance = np.linalg.norm(light_point - point)
-        shadow_intersection = self.find_intersection(shadow_ray)
-        if shadow_intersection:
-            obj, p, _ = shadow_intersection
-            if obj.is_light:
+        shadow_ray = Ray(surface_point, light_point - surface_point)
+        distance = np.linalg.norm(light_point - surface_point)
+
+        intersection = self.__send_ray(shadow_ray)
+        if intersection:
+
+            if intersection.obj_properties.is_light:
                 return False
-            if np.linalg.norm(p - point) < distance:
+            if np.linalg.norm(intersection.point - surface_point) < distance:
                 return True
 
         return False
 
-    def get_color(self, ray):
-        """return the color(phong) of the first intersected object"""
-        I = np.zeros(3)
-        ray_intersection = self.find_intersection(ray)
-
-        if ray_intersection:
-            obj, point, normal = ray_intersection 
-
-            if obj.is_light:
-                return obj.light_color
-
-            I = self.phong(ray, obj, point, normal)
-
-        return I
+    #def __get_color(self, ray):
+    #    """return the color(phong) of the first intersected object"""
+    #    I = np.zeros(3)
+    #    ray_intersection = self.__send_ray(ray)
+    #
+    #    if ray_intersection:
+    #        obj, point, normal = ray_intersection 
+    #
+    #        if obj.is_light:
+    #            return obj.light_color
+    #
+    #        I = self.__illumination(ray, obj, point, normal)
+    #
+    #    return I

@@ -23,6 +23,7 @@ class Camera():
         self.__initialize()
 
     def __initialize(self):
+        """Initialize direction/up/side vectors"""
         self.t = self._target - self._eye
         self.b = np.cross(self._up, self.t)
 
@@ -33,6 +34,7 @@ class Camera():
         self.d = np.linalg.norm(self._target - self._eye)
 
     def get_rays(self):
+        """return a list of initial rays from the camera starting point"""
         rays = []
 
         w = self.pixels_size[0]
