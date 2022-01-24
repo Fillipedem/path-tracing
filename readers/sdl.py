@@ -60,6 +60,8 @@ class SDLReader():
             )
         elif 'output' == command:
             self.output = options[1]
+        elif 'reflections' == command:
+            self.reflections = int(options[1])
         else:
             raise ValueError(f"Comando não encontrado: {command}!") 
 

@@ -6,6 +6,7 @@ SceneObject - One or more scene objects
 Triangles - Triangle object
 """
 from random import randint
+import random
 import numpy as np
 
 
@@ -26,6 +27,9 @@ class Properties():
         self.kt = kt
         self.n = n
         self.is_light = is_light
+
+    def random(self):
+        return random.uniform(0, self.kd + self.ks + self.kt)
 
 class Light():
 

@@ -7,7 +7,7 @@
 import numpy as np 
 
 
-def sampling_up_hemisphere(self, V, N):
+def sampling_up_hemisphere(V, N):
     """Return a vector from the hemisphere with N as the Z coordinates"""
 
     # random selecting a vector from a hemisphere(canonical basis)
@@ -20,7 +20,7 @@ def sampling_up_hemisphere(self, V, N):
         np.cos(a)
         )
     )
-
+    
     # creating a new basis with V and N vectors
     N = N/np.linalg.norm(N)
     S = np.cross(N, V)
@@ -34,7 +34,7 @@ def sampling_up_hemisphere(self, V, N):
     return matrix.transpose()@canonical_vector
 
     
-def snell_law(self, V, N, n_obj = 1.5, n_air = 1.0):
+def snell_law(V, N, n_obj = 1.5, n_air = 1.0):
     """return refracted vector given the view vector V(V "points" toward the surface) and the surface normal(N)"""
     if np.dot(N, V) > 0:
         N = -N
